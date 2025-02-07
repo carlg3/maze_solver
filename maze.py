@@ -1,14 +1,19 @@
 import argparse, cv2, numpy as np
 
-OUTPUT_DIR = "output/"
+OUTPUT_DIR = "./output/"
 
 # Crea un parser per gli argomenti della riga di comando
 parser = argparse.ArgumentParser(description='Risolutore di labirinti con Python e OpenCV.')
 parser.add_argument('filename', type=str, help='Nome del file dell\'immagine del labirinto')
 
 args = parser.parse_args()
-
 filename = args.filename
+
+# Estrai solo il nome del file senza estensione e percorso
+f = filename.split('/')[-1].split('.')[0]
+
+# Crea il percorso per l'immagine risolta
+output_f = f"{OUTPUT_DIR}{f}_solved.png"
 
 def print_solution(img, mask):
     # Splitting the channels of maze
@@ -55,10 +60,12 @@ def find_solution(img):
 maze = cv2.imread(filename)
 
 # Risolve il labirinto
+print("Solving the maze...")
+
 res = find_solution(maze)
 
-# Stampa la soluzione
-sol = print_solution(maze, res)
+# Stampa la soluzione e salva l'immagine del labirinto risolto
+print(f"Solved and saved the maze image in {output_f}.")
 
-# Salva l'immagine del labirinto risolto
-cv2.imwrite(OUTPUT_DIR + filename + '_solved.png', sol)
+sol = print_solution(maze, res)
+cv2.imwrite(output_f, sol)
