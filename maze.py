@@ -1,41 +1,64 @@
-import cv2, numpy as np
+import argparse, cv2, numpy as np
 
-filename = 'maze.png'
-img = cv2.imread(filename)
+OUTPUT_DIR = "output/"
 
-# Binary conversion
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+# Crea un parser per gli argomenti della riga di comando
+parser = argparse.ArgumentParser(description='Risolutore di labirinti con Python e OpenCV.')
+parser.add_argument('filename', type=str, help='Nome del file dell\'immagine del labirinto')
 
-# Inverting tholdolding will give us a binary image with a white wall and a black background.
-ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
+args = parser.parse_args()
 
-# Contours
-contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+filename = args.filename
 
-dc = cv2.drawContours(thresh, contours, 0, (255, 255, 255), 5)
-dc = cv2.drawContours(dc, contours, 1, (0, 0, 0), 5)
+def print_solution(img, mask):
+    # Splitting the channels of maze
+    b, g, r = cv2.split(img)
 
-ret, thresh = cv2.threshold(dc, 240, 255, cv2.THRESH_BINARY)
+    # Masking out the green and red colour from the solved path
+    r = cv2.bitwise_and(r, r, mask=mask)
+    b = cv2.bitwise_and(b, b, mask=mask)
 
-kernel = np.ones((19, 19), np.uint8)
+    return cv2.merge((b, g, r))
 
-# Dilate
-dilation = cv2.dilate(thresh, kernel, iterations = 1)
+def find_solution(img):
+    # Binary conversion
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-# Erosion
-erosion = cv2.erode(dilation, kernel, iterations = 1)
+    # Inverting thresholding will give us a binary image with a white wall and a black background.
+    ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
 
-# Find differences between two images
-diff = cv2.absdiff(dilation, erosion)
+    # Finding contours
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-mask_inv = cv2.bitwise_not(diff)
+    dc = cv2.drawContours(thresh, contours, 0, (255, 255, 255), 5)
+    dc = cv2.drawContours(dc, contours, 1, (0, 0, 0), 5)
 
-# Splitting the channels of maze
-b, g, r = cv2.split(img)
+    ret, thresh = cv2.threshold(dc, 240, 255, cv2.THRESH_BINARY)
 
-# Masking out the green and red colour from the solved path
-r = cv2.bitwise_and(r, r, mask=mask_inv)
-b = cv2.bitwise_and(b, b, mask=mask_inv)
+    # Creating a kernel for morphological operations
+    kernel = np.ones((15, 15), np.uint8)
 
-res = cv2.merge((b, g, r))
-cv2.imwrite(filename+'_solved.png', res)
+    # Dilate
+    dilation = cv2.dilate(thresh, kernel, iterations = 1)
+
+    # Erosion
+    erosion = cv2.erode(dilation, kernel, iterations = 1)
+
+    # Find differences between two images
+    diff = cv2.absdiff(dilation, erosion)
+
+    mask_inv = cv2.bitwise_not(diff)
+
+    return mask_inv
+
+# Legge l'immagine del labirinto
+maze = cv2.imread(filename)
+
+# Risolve il labirinto
+res = find_solution(maze)
+
+# Stampa la soluzione
+sol = print_solution(maze, res)
+
+# Salva l'immagine del labirinto risolto
+cv2.imwrite(OUTPUT_DIR + filename + '_solved.png', sol)
