@@ -9,12 +9,6 @@ parser.add_argument('filename', type=str, help='Nome del file dell\'immagine del
 args = parser.parse_args()
 filename = args.filename
 
-# Estrai solo il nome del file senza estensione e percorso
-f = filename.split('/')[-1].split('.')[0]
-
-# Crea il percorso per l'immagine risolta
-output_f = f"{OUTPUT_DIR}{f}_solved.png"
-
 def print_solution(img, mask):
     # Splitting the channels of maze
     b, g, r = cv2.split(img)
@@ -26,19 +20,25 @@ def print_solution(img, mask):
     return cv2.merge((b, g, r))
 
 def find_solution(img):
+    # ----------------- Preprocessing the image -----------------
+
     # Binary conversion
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Inverting thresholding will give us a binary image with a white wall and a black background.
+    # [Thresh] Inverting thresholding will give us a binary image with a white wall and a black background.
     ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
 
     # Finding contours
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
+    # Drawing the contours on the image to get better better walls of the maze 
     dc = cv2.drawContours(thresh, contours, 0, (255, 255, 255), 5)
     dc = cv2.drawContours(dc, contours, 1, (0, 0, 0), 5)
 
+    # [Thresh] Thresholding the image to get a binary image
     ret, thresh = cv2.threshold(dc, 240, 255, cv2.THRESH_BINARY)
+
+    # ----------------- Solving the maze -----------------
 
     # Creating a kernel for morphological operations
     kernel = np.ones((15, 15), np.uint8)
@@ -56,16 +56,20 @@ def find_solution(img):
 
     return mask_inv
 
+# Estrai solo il nome del file senza estensione e percorso
+f = filename.split('/')[-1].split('.')[0]
+
+# Crea il percorso per l'immagine risolta
+output_f = f"{OUTPUT_DIR}{f}_solved.png"
+
 # Legge l'immagine del labirinto
 maze = cv2.imread(filename)
 
 # Risolve il labirinto
 print("Solving the maze...")
-
 res = find_solution(maze)
 
 # Stampa la soluzione e salva l'immagine del labirinto risolto
 print(f"Solved and saved the maze image in {output_f}.")
-
 sol = print_solution(maze, res)
 cv2.imwrite(output_f, sol)
