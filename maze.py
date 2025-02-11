@@ -90,6 +90,6 @@ def main(filename):
     This function is decorated with the create_solution_wrapper to handle
     the preprocessing, solving, and merging of the maze solution.
     """
-    print(f"Solving maze for file: {filename}")
+    print(f"Solved maze '{filename}'")
 
 main(filename)
