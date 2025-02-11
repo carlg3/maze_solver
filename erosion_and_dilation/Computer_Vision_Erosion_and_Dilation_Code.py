@@ -92,7 +92,7 @@ plt.imshow(dilate_im_)
 ### Output atteso
 """
 
-eroded_im_exp = cv2.erode(m.astype(np.uint8), kernel)
+eroded_im_exp = cv2.erode(m, kernel)
 
 """### Output sperimentale"""
 
