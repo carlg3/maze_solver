@@ -7,10 +7,10 @@ parser.add_argument('filename', type=str, help='Nome del file dell\'immagine del
 args = parser.parse_args()
 filename = args.filename
 
-def create_solution_wrapper(input_dir="input", output_dir="output"):
+def filecheck(input_dir="input", output_dir="output"):
     def decorator(func):
-        def wrapper(*args, **kwargs):
-            f = filename.split('.')[0]
+        def wrapper(filename):
+            f = filename.rsplit('.', 1)[0]
 
             input_f = f"./{input_dir}/{filename}"
             output_f = f"./{output_dir}/{f}_solved.png"
@@ -24,12 +24,7 @@ def create_solution_wrapper(input_dir="input", output_dir="output"):
                 print(e)
                 exit(1)
 
-            thresh = preprocess_image(img)
-            mask = solve_maze(thresh)
-            res = merge_sol(img, mask)
-
-            cv2.imwrite(output_f, res)
-            return func(*args, **kwargs)
+            return func(img, output_f)
         return wrapper
     return decorator
 
@@ -83,13 +78,15 @@ def merge_sol(img, mask):
     return cv2.merge((b, g, r))
 
 # ----------------- Main function -----------------
-@create_solution_wrapper()
-def main(filename):
-    """
-    Main function to execute the maze solver.
-    This function is decorated with the create_solution_wrapper to handle
-    the preprocessing, solving, and merging of the maze solution.
-    """
-    print(f"Solved maze '{filename}'")
+@filecheck()
+def main(img, output_f):
+    print("Solving maze...") 
+
+    thresh = preprocess_image(img)
+    mask = solve_maze(thresh)
+    res = merge_sol(img, mask)
+
+    print(f"Maze solved!\nSaving to '{output_f}'...")
+    cv2.imwrite(output_f, res)
 
 main(filename)
