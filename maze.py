@@ -38,7 +38,7 @@ def preprocess_image(img):
     # Binary conversion
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Apply thresholding to invert the binary image, resulting in a white wall and a black background.
+    # [Thresh#1] Apply thresholding to invert the binary image, resulting in a white wall and a black background.
     ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
 
     # Finding contours
@@ -48,7 +48,7 @@ def preprocess_image(img):
     dc = cv2.drawContours(thresh, contours, 0, (255, 255, 255), 5)
     dc = cv2.drawContours(dc, contours, 1, (0, 0, 0), 5)
 
-    # [Thresh] Thresholding the image to get a binary image
+    # [Thresh#2] Thresholding the image to get a binary image
     ret, thresh = cv2.threshold(dc, 240, 255, cv2.THRESH_BINARY)
 
     return thresh
