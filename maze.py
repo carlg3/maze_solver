@@ -1,7 +1,5 @@
 import argparse, cv2, numpy as np
 
-OUTPUT_DIR = "./output/"
-
 # Crea un parser per gli argomenti della riga di comando
 parser = argparse.ArgumentParser(description='Risolutore di labirinti con Python e OpenCV.')
 parser.add_argument('filename', type=str, help='Nome del file dell\'immagine del labirinto')
@@ -9,23 +7,38 @@ parser.add_argument('filename', type=str, help='Nome del file dell\'immagine del
 args = parser.parse_args()
 filename = args.filename
 
-def print_solution(img, mask):
-    # Splitting the channels of maze
-    b, g, r = cv2.split(img)
+def create_solution_wrapper(input_dir="input", output_dir="output"):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            f = filename.split('.')[0]
 
-    # Masking out the green and red colour from the solved path
-    r = cv2.bitwise_and(r, r, mask=mask)
-    b = cv2.bitwise_and(b, b, mask=mask)
+            input_f = f"./{input_dir}/{filename}"
+            output_f = f"./{output_dir}/{f}_solved.png"
 
-    return cv2.merge((b, g, r))
+            try:
+                img = cv2.imread(input_f)
 
-def find_solution(img):
-    # ----------------- Preprocessing the image -----------------
+                if img is None:
+                    raise FileNotFoundError(f"Errore: impossibile aprire il file {input_f}")
+            except FileNotFoundError as e:
+                print(e)
+                exit(1)
 
+            thresh = preprocess_image(img)
+            mask = solve_maze(thresh)
+            res = merge_sol(img, mask)
+
+            cv2.imwrite(output_f, res)
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# ----------------- Preprocessing the image -----------------
+def preprocess_image(img):
     # Binary conversion
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # [Thresh] Inverting thresholding will give us a binary image with a white wall and a black background.
+    # Apply thresholding to invert the binary image, resulting in a white wall and a black background.
     ret, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
 
     # Finding contours
@@ -38,8 +51,10 @@ def find_solution(img):
     # [Thresh] Thresholding the image to get a binary image
     ret, thresh = cv2.threshold(dc, 240, 255, cv2.THRESH_BINARY)
 
-    # ----------------- Solving the maze -----------------
+    return thresh
 
+# ----------------- Solving the maze -----------------
+def solve_maze(thresh):
     # Creating a kernel for morphological operations
     kernel = np.ones((15, 15), np.uint8)
 
@@ -49,27 +64,32 @@ def find_solution(img):
     # Erosion
     erosion = cv2.erode(dilation, kernel, iterations = 1)
 
-    # Find differences between two images
+    # Find differences between two images   
     diff = cv2.absdiff(dilation, erosion)
 
     mask_inv = cv2.bitwise_not(diff)
 
     return mask_inv
 
-# Estrai solo il nome del file senza estensione e percorso
-f = filename.split('/')[-1].split('.')[0]
+# ----------------- Printing the solution -----------------
+def merge_sol(img, mask):
+    # Splitting the channels of maze
+    b, g, r = cv2.split(img)
 
-# Crea il percorso per l'immagine risolta
-output_f = f"{OUTPUT_DIR}{f}_solved.png"
+    # Masking out the green and red colour from the solved path
+    r = cv2.bitwise_and(r, r, mask=mask)
+    b = cv2.bitwise_and(b, b, mask=mask)
 
-# Legge l'immagine del labirinto
-maze = cv2.imread(filename)
+    return cv2.merge((b, g, r))
 
-# Risolve il labirinto
-print("Solving the maze...")
-res = find_solution(maze)
+# ----------------- Main function -----------------
+@create_solution_wrapper()
+def main(filename):
+    """
+    Main function to execute the maze solver.
+    This function is decorated with the create_solution_wrapper to handle
+    the preprocessing, solving, and merging of the maze solution.
+    """
+    print(f"Solving maze for file: {filename}")
 
-# Stampa la soluzione e salva l'immagine del labirinto risolto
-print(f"Solved and saved the maze image in {output_f}.")
-sol = print_solution(maze, res)
-cv2.imwrite(output_f, sol)
+main(filename)
