@@ -39,7 +39,7 @@ def preprocess_image(img):
     # Finding contours
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-    # Drawing the contours on the image to get better better walls of the maze 
+    # Drawing the contours on the image to get better walls of the maze 
     dc = cv2.drawContours(thresh, contours, 0, (255, 255, 255), 5)
     dc = cv2.drawContours(dc, contours, 1, (0, 0, 0), 5)
 
