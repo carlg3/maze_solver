@@ -1,3 +1,5 @@
+# Carlo Galante, mat. 535663
+
 import argparse, cv2, numpy as np
 
 # Crea un parser per gli argomenti della riga di comando
